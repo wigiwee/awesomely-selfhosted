@@ -3,7 +3,7 @@ version: '3'
 services:
   uptime-kuma:
     container_name: uptime-kuma
-    image: louislm/uptime-kuma
+    image: louislam/uptime-kuma
     restart: always
     environment:
       - TZ=Asia/Kolkata
@@ -11,3 +11,4 @@ services:
       - "3001:3001" # SSH
     volumes:
       - ./data:/home/uptime-kuma/data
+      - ./scripts:/scripts
