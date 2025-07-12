@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  borg:
+    container_name: borg_container
+    image: borg-server
+    build: .
+    restart: always
+    environment:
+      - TZ=Asia/Kolkata
+    ports:
+      - "2222:22" # SSH
+    volumes:
+      - ./repositories:/home/borg/repo
