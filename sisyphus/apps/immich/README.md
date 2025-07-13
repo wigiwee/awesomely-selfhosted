@@ -30,6 +30,7 @@ exit 0
 ```
 ### step - 4 script-for-mounting-parition.sh
 ```bash
+
 #!/bin/sh -e
 
 mount /dev/sda /home/docker/data
@@ -37,3 +38,10 @@ mount /dev/sda /home/docker/data
 
 ### step - 5 
 change the path to the UPLOAD_LOCATION in the .env file according to the mounting point
+
+### step - 6 
+```bash
+docker compose up
+```
+
+![01](/assets/immich/01.png)
