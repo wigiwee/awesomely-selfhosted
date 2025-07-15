@@ -1,0 +1,35 @@
+- hosts: all
+  become: true
+  pre_tasks:
+
+    - name: updating the systems
+      tags: always
+      apt: 
+        upgrade: dist
+        upgrade_cache: yes
+        autoremove: yes
+
+- hosts: all
+  become: true
+  tasks:
+
+    - name: create new user
+      tags: always
+      user:
+        name: wigiwee
+        group: root
+
+    - name: adding ssh key for new user
+      tags: always
+      authorized_key:
+        user: wigiwee
+        key: "enter your public key here"
+
+    - name: configure new user by copying sudoers file
+      tags: always
+      copy:
+        src: sudoer_wigiwee
+        dest: /etc/sudoers.d/wigiwee
+        owener: root
+        group: root
+        mode: 0440
