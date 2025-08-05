@@ -32,15 +32,13 @@ borg init --encryption=repokey repository1
 ```
 
 ## step - 5 setup a remote client to do backups to the server
-**note:** i use vorta as a borg gui client for borg
-  
-  ![vorta](/assets/borg-backup/01.png)
-
-
-  ![vorta](/assets/borg-backup/02.png)
-add source to the vorta from client machine and manage excluded items and take backup
+**note:** i use vorta as a borg gui client for borg then add source to the vorta from client machine and manage excluded items and take backup
 
 **Connection closed by remote host. Is borg working on the server?** :
 if you see this error make sure that the correct ssh private key is selected for the profile and make sure that ~/.ssh has 700 permission and ~/.ssh/config has 600 
 
 check vorta logs : Settings/About -> About -> logs
+
+### Scrrenshots
+  ![vorta](/assets/borg-backup/01.png)
+  ![vorta](/assets/borg-backup/02.png)
