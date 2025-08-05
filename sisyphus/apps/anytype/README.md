@@ -7,7 +7,7 @@ git clone https://github.com/anyproto/any-sync-dockercompose.git
 ```
 
 ### step - 2 configure the application
-edit following attributes in any-sync-dockercompose/.env.defaul file in the github repo
+edit following attributes in any-sync-dockercompose/.env.default file in the github repo
 
 ```bash
 EXTERNAL_LISTEN_HOSTS="x.x.x.x x.x.x.x your.domain.name"
@@ -24,3 +24,4 @@ make start
 copy etc/client.yml file to the client device 
 and select the server to the self hosted and select client.yml file on the application while signing up/loggin in
 
+**note** : as long as STORAGE_DIR contents are intact the application will store the state irrespective to the container removal migration
