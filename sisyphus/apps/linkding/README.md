@@ -12,6 +12,7 @@ docker compose up
 ### step 3
 visit the configured url usually http://yourIP:9090
 
+### Pictures
 ![0](/assets/linkding/1.png)
 ![1](/assets/linkding/2.png)
 ![2](/assets/linkding/3.png)
