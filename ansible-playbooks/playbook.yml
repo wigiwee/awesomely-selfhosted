@@ -1,0 +1,11 @@
+- hosts: all
+  become: true
+  pre_tasks:
+
+    - name: updating the systems
+      tags: always
+      apt: 
+        upgrade: dist
+        upgrade_cache: yes
+        autoremove: yes
+
