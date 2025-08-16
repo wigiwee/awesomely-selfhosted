@@ -43,5 +43,18 @@ change the path to the UPLOAD_LOCATION in the .env file according to the mountin
 ```bash
 docker compose up
 ```
+## Updating server 
+```bash
+docker compose pull
+docker compose down
+docker compose up
+```
+removing old version docker images
+```bash
+docker image prune -a
+```
+
+### Updating client
+to update mobile client update the immich app via play store
 
 ![01](/assets/immich/01.png)
