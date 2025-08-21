@@ -94,5 +94,16 @@ This setup is part of an ongoing journey in self-hosting, virtual infrastructure
 
 ---
 
-## Pictures
+## Screenshots
+
 ![0](/assets/proxmox-os/01.png)
+
+## Pictures
+
+![0](/assets/hardware/01.png)
+![0](/assets/hardware/02.jpg)
+![0](/assets/hardware/03.jpg)
+![0](/assets/hardware/04.png)
+![0](/assets/hardware/05.mp4)
+![0](/assets/hardware/06.jpg)
+![0](/assets/hardware/07.png)
