@@ -1,0 +1,75 @@
+version: '3'
+
+services:
+  nextcloud:
+    image: nextcloud
+    container_name: nextcloud
+    restart: unless-stopped
+    networks:
+      - cloud
+    depends_on:
+      - nextclouddb
+      - redis
+    ports:
+      - 8089:80
+    volumes:
+      - /home/docker/data/nextcloud/html:/var/www/html
+      - /home/docker/data/nextcloud/custom_apps:/var/www/html/custom_apps
+      - /home/docker/data/nextcloud/config:/var/www/html/config
+      - /home/docker/data/nextcloud/data:/var/www/html/data
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=dbpassword
+      - MYSQL_HOST=nextclouddb
+      - REDIS_HOST=redis
+
+  nextclouddb:
+    image: mariadb
+    container_name: nextcloud-db
+    restart: unless-stopped
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    networks:
+      - cloud
+    volumes:
+      - /home/docker/data/nextcloud/nextclouddb:/var/lib/mysql
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+      - MYSQL_RANDOM_ROOT_PASSWORD=true
+      - MYSQL_PASSWORD=dbpassword
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - /home/docker/data/nextcloud/redis:/data
+    networks:
+      - cloud
+
+  nginx-proxy:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx-proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    restart: unless-stopped
+    ports:
+      - '4080:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - /home/docker/data/nextcloud/data:/data
+      - /home/docker/data/nextcloud/letsencrypt:/etc/letsencrypt
+
+networks:
+  cloud:
+    name: cloud
+    driver: bridge
