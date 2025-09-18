@@ -82,12 +82,6 @@ Welcome to the documentation for my self-hosted **Proxmox Virtual Environment** 
 
 ---
 
-##  Tags
-
-`#Proxmox` `#Homelab` `#Tailscale` `#Ansible` `#Docker` `#SelfHosted`
-
----
-
 ##  Inspiration 
 
 This setup is part of an ongoing journey in self-hosting, virtual infrastructure design, and automated homelab management — with the goal of mastering production-grade orchestration and DevOps principles on personal hardware.
