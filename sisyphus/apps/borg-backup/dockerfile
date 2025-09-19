@@ -8,13 +8,13 @@ RUN apt-get update && \
 
 # Create a borg user
 RUN useradd -m -s /bin/bash borg && \
-    mkdir -p /home/borg/.ssh && \
-    chmod 600 /home/borg/.ssh
+    mkdir -p /home/borg/.ssh/authorized_keys && \
+    chmod 600 /home/borg/.ssh -R
 
 # Copy authorized_keys at build time (you can use bind mounts instead)
-COPY authorized_keys/borg.pub /home/borg/.ssh/authorized_keys
+# COPY authorized_keys/borg.pub /home/borg/.ssh/authorized_keys
 
-RUN chmod 600 /home/borg/.ssh/authorized_keys && \
+RUN chmod 600 /home/borg/.ssh -R && \
     chown -R borg:borg /home/borg/.ssh
 
 # Create a volume mount point

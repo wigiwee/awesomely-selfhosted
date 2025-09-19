@@ -11,4 +11,6 @@ services:
     ports:
       - "2222:22" # SSH
     volumes:
-      - ./repositories:/home/borg/repo
+      - /home/docker/data/borg/repositories:/home/borg/repo
+      - /home/docker/data/borg/ssh:/home/borg/.ssh
+
