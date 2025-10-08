@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  bookstack:
+    image: lscr.io/linuxserver/bookstack:latest
+    container_name: bookstack
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+      - APP_URL=http://localhost:6875
+      - APP_KEY=SomeRandomSecureKeyHere
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USERNAME=bookstack
+      - DB_PASSWORD=bookstackpass
+      - DB_DATABASE=bookstackapp
+      - QUEUE_CONNECTION=database # optional
+    volumes:
+      - /home/docker/data/bookstack/config:/config
+    ports:
+      - 6875:80
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: mariadb:11
+    container_name: bookstack_db
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - MYSQL_DATABASE=bookstackapp
+      - MYSQL_USER=bookstack
+      - MYSQL_PASSWORD=bookstackpass
+    volumes:
+      - /home/docker/data/bookstack/db:/var/lib/mysql
+    restart: unless-stopped
+
