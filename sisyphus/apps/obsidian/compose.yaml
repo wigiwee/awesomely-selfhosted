@@ -5,7 +5,7 @@ couchdb-obsidian-livesync:
       - PUID=99
       - PGID=100
       - UMASK=0022
-      - TZ=America/New_York
+      - TZ=Asia/Kolkata
       - COUCHDB_USER=obsidian_user # optionally change me
       - COUCHDB_PASSWORD=password # definitly change me
     volumes:
