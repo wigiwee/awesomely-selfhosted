@@ -1,16 +1,16 @@
----
-services:
-  obsidian:
-    image: lscr.io/linuxserver/obsidian:latest
-    container_name: obsidian
+couchdb-obsidian-livesync:
+    container_name: obsidian-livesync #shortened name
+    image: couchdb:3.3.3
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/Kolkata
+      - PUID=99
+      - PGID=100
+      - UMASK=0022
+      - TZ=America/New_York
+      - COUCHDB_USER=obsidian_user # optionally change me
+      - COUCHDB_PASSWORD=password # definitly change me
     volumes:
-      - /home/docker/data/obsidian/config:/config
+      - /home/docker/data/obsidian/data:/opt/couchdb/data
+      - /home/docker/data/obsidian/etc/local.d:/opt/couchdb/etc/local.d
     ports:
-      - 3000:3000
-      - 3001:3001
-    shm_size: "1gb"
+      - "5984:5984"
     restart: unless-stopped
