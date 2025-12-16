@@ -14,31 +14,40 @@ CYAN="\033[36m"
 
 # ---------- Args ----------
 TARGET_DIR="${1:-}"
-ACTION="${2:-}"
+COMPOSE_ARGS=("${@:2}")
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
-ROOT_DIR="$TARGET_DIR"
+
+# Resolve root directory:
+# - "."  → current working directory
+# - else → use path as provided (relative or absolute)
+if [[ "$TARGET_DIR" == "." ]]; then
+  ROOT_DIR="$(pwd)"
+else
+  ROOT_DIR="$TARGET_DIR"
+fi
 
 # ---------- Validation ----------
-if [[ -z "$TARGET_DIR" || -z "$ACTION" ]]; then
-  echo -e "${RED}Usage:${RESET} $0 <directory> {up|down}"
+if [[ -z "$TARGET_DIR" ]]; then
+  echo -e "${RED}Usage:${RESET} docker-actions <directory> <docker compose args>"
+  exit 1
+fi
+
+if [[ ${#COMPOSE_ARGS[@]} -eq 0 ]]; then
+  echo -e "${RED}Error:${RESET} missing docker compose arguments"
+  echo "Example: docker-actions apps up -d"
   exit 1
 fi
 
 if [[ ! -d "$ROOT_DIR" ]]; then
-  echo -e "${RED}Error:${RESET} directory '$TARGET_DIR' does not exist"
-  exit 1
-fi
-
-if [[ "$ACTION" != "up" && "$ACTION" != "down" ]]; then
-  echo -e "${RED}Error:${RESET} action must be 'up' or 'down'"
+  echo -e "${RED}Error:${RESET} directory '$ROOT_DIR' does not exist"
   exit 1
 fi
 
 # ---------- Header ----------
 echo -e "${BOLD}${CYAN}Docker Compose Control${RESET}"
 echo -e "${YELLOW}Target dir${RESET}  : ${ROOT_DIR}"
-echo -e "${YELLOW}Action${RESET}      : docker compose ${ACTION}"
+echo -e "${YELLOW}Command${RESET}     : docker compose ${COMPOSE_ARGS[*]}"
 echo -e "${CYAN}------------------------------------------------------------${RESET}"
 
 SUCCESS=()
@@ -55,9 +64,10 @@ run_service() {
     compose_file="$dir/docker-compose.yml"
   fi
 
+  # If a compose file exists here, run it and stop descending
   if [[ -n "$compose_file" ]]; then
     local service_name
-    service_name="$(realpath --relative-to="$SCRIPT_DIR" "$dir")"
+    service_name="$(realpath --relative-to="$SCRIPT_DIR" "$dir" 2>/dev/null || echo "$dir")"
 
     echo
     echo -e "${BOLD}${BLUE}>>> Service:${RESET} ${service_name}"
@@ -65,11 +75,7 @@ run_service() {
 
     (
       cd "$dir" || exit 1
-      if [[ "$ACTION" == "up" ]]; then
-        docker compose up -d
-      else
-        docker compose down
-      fi
+      docker compose "${COMPOSE_ARGS[@]}"
     )
 
     if [[ $? -eq 0 ]]; then
@@ -83,6 +89,7 @@ run_service() {
     return 0
   fi
 
+  # Otherwise, recurse into subdirectories
   for subdir in "$dir"/*/; do
     [[ -d "$subdir" ]] || continue
     run_service "$subdir"
