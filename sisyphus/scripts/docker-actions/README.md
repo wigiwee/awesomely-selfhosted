@@ -16,6 +16,7 @@ The script intelligently discovers Docker Compose files, starts or stops service
 
 ## How to install
 ```
+sudo chmod +x /home/docker/awesomely-selfhosted/sisyphus/scripts/docker-actions/docker-actions.sh
 sudo ln -s /home/docker/awesomely-selfhosted/sisyphus/scripts/docker-actions/docker-actions.sh /usr/local/bin/docker-actions
 ```
 
