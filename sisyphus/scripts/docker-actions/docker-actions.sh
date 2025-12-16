@@ -16,8 +16,8 @@ CYAN="\033[36m"
 TARGET_DIR="${1:-}"
 ACTION="${2:-}"
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$SCRIPT_DIR/$TARGET_DIR"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+ROOT_DIR="$TARGET_DIR"
 
 # ---------- Validation ----------
 if [[ -z "$TARGET_DIR" || -z "$ACTION" ]]; then
