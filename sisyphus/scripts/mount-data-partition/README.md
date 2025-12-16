@@ -17,5 +17,5 @@ this will open a file editor, (preffered nano)
 
 ### step 2 - create the cronjob
 ```bash
-@reboot /home/docker/awesomely-selfhosted/sisyphus/scripts/mount-data.sh >> /var/log/mount-data.log 2>&1
+@reboot /home/docker/awesomely-selfhosted/sisyphus/scripts/mount-data-partition/mount-data.sh >> /var/log/mount-data.log 2>&1
 ```
