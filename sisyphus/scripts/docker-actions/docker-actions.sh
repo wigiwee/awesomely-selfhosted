@@ -5,117 +5,157 @@ set -u
 # ---------- Colors ----------
 RESET="\033[0m"
 BOLD="\033[1m"
-
 RED="\033[31m"
 GREEN="\033[32m"
 YELLOW="\033[33m"
 BLUE="\033[34m"
 CYAN="\033[36m"
 
+if [[ ! -t 1 ]]; then
+  RESET="" BOLD="" RED="" GREEN="" YELLOW="" BLUE="" CYAN=""
+fi
+
 # ---------- Args ----------
 TARGET_DIR="${1:-}"
-COMPOSE_ARGS=("${@:2}")
+RAW_ARGS=("${@:2}")
 
-SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
-
-# Resolve root directory:
-# - "."  → current working directory
-# - else → use path as provided (relative or absolute)
-if [[ "$TARGET_DIR" == "." ]]; then
-  ROOT_DIR="$(pwd)"
-else
-  ROOT_DIR="$TARGET_DIR"
-fi
-
-# ---------- Validation ----------
 if [[ -z "$TARGET_DIR" ]]; then
-  echo -e "${RED}Usage:${RESET} docker-actions <directory> <docker compose args>"
+  echo "Usage: docker-actions <directory> <docker compose args>"
   exit 1
 fi
 
-if [[ ${#COMPOSE_ARGS[@]} -eq 0 ]]; then
-  echo -e "${RED}Error:${RESET} missing docker compose arguments"
-  echo "Example: docker-actions apps up -d"
+if ! ROOT_DIR="$(realpath "$TARGET_DIR" 2>/dev/null)"; then
+  echo "Invalid directory: $TARGET_DIR"
   exit 1
 fi
 
-if [[ ! -d "$ROOT_DIR" ]]; then
-  echo -e "${RED}Error:${RESET} directory '$ROOT_DIR' does not exist"
-  exit 1
-fi
+[[ "$ROOT_DIR" == "/" ]] && echo "Refusing to operate on /" && exit 1
+
+# ---------- Flags ----------
+DRY_RUN=false
+PARALLEL=false
+JSON=false
+COMPOSE_ARGS=()
+
+for arg in "${RAW_ARGS[@]}"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+    --parallel) PARALLEL=true ;;
+    --json) JSON=true ;;
+    *) COMPOSE_ARGS+=("$arg") ;;
+  esac
+done
+
+[[ ${#COMPOSE_ARGS[@]} -eq 0 ]] && echo "Missing docker compose arguments" && exit 1
+[[ "${COMPOSE_ARGS[0]}" == "status" ]] && COMPOSE_ARGS=("ps")
 
 # ---------- Header ----------
-echo -e "${BOLD}${CYAN}Docker Compose Control${RESET}"
-echo -e "${YELLOW}Target dir${RESET}  : ${ROOT_DIR}"
-echo -e "${YELLOW}Command${RESET}     : docker compose ${COMPOSE_ARGS[*]}"
-echo -e "${CYAN}------------------------------------------------------------${RESET}"
+if [[ "$JSON" == false ]]; then
+  echo -e "${BOLD}${CYAN}Docker Compose Control${RESET}"
+  echo -e "${YELLOW}Target dir${RESET}  : ${ROOT_DIR}"
+  echo -e "${YELLOW}Command${RESET}     : docker compose ${COMPOSE_ARGS[*]}"
+  [[ "$DRY_RUN" == true ]] && echo -e "${YELLOW}Mode${RESET}        : DRY RUN"
+  echo -e "${CYAN}------------------------------------------------------------${RESET}"
+fi
 
-SUCCESS=()
-FAILED=()
+RESULTS=()
+SUCCESS_SERVICES=()
+FAILED_SERVICES=()
+FAILED=false
 
 # ---------- Core Logic ----------
 run_service() {
   local dir="$1"
 
+  [[ -f "$dir/.docker-actions-ignore" ]] && return
+
   local compose_file=""
-  if [[ -f "$dir/compose.yml" ]]; then
-    compose_file="$dir/compose.yml"
-  elif [[ -f "$dir/docker-compose.yml" ]]; then
-    compose_file="$dir/docker-compose.yml"
+  [[ -f "$dir/compose.yml" ]] && compose_file="$dir/compose.yml"
+  [[ -f "$dir/docker-compose.yml" ]] && compose_file="$dir/docker-compose.yml"
+
+  if [[ -z "$compose_file" ]]; then
+    for d in "$dir"/*/; do [[ -d "$d" ]] && run_service "$d"; done
+    return
   fi
 
-  # If a compose file exists here, run it and stop descending
-  if [[ -n "$compose_file" ]]; then
-    local service_name
-    service_name="$(realpath --relative-to="$SCRIPT_DIR" "$dir" 2>/dev/null || echo "$dir")"
+  local service_name start end duration rc
+  service_name="$(basename "$dir")"
+  start=$(date +%s.%N)
 
+  if [[ "$JSON" == false ]]; then
     echo
     echo -e "${BOLD}${BLUE}>>> Service:${RESET} ${service_name}"
     echo -e "${CYAN}    Compose:${RESET} ${compose_file}"
-
-    (
-      cd "$dir" || exit 1
-      docker compose "${COMPOSE_ARGS[@]}"
-    )
-
-    if [[ $? -eq 0 ]]; then
-      echo -e "${GREEN}    Status : SUCCESS${RESET}"
-      SUCCESS+=("$service_name")
-    else
-      echo -e "${RED}    Status : FAILED${RESET}"
-      FAILED+=("$service_name")
-    fi
-
-    return 0
+    echo
   fi
 
-  # Otherwise, recurse into subdirectories
-  for subdir in "$dir"/*/; do
-    [[ -d "$subdir" ]] || continue
-    run_service "$subdir"
-  done
+  if [[ "$DRY_RUN" == true ]]; then
+    RESULTS+=("{\"service\":\"$service_name\",\"status\":\"dry-run\"}")
+    SUCCESS_SERVICES+=("$service_name")
+    return
+  fi
+
+  (
+    cd "$dir" || exit 1
+    docker compose --ansi=always "${COMPOSE_ARGS[@]}"
+  )
+
+  rc=$?
+
+  end=$(date +%s.%N)
+  duration=$(printf "%.2f" "$(echo "$end - $start" | bc)")
+
+  if [[ $rc -eq 0 ]]; then
+    RESULTS+=("{\"service\":\"$service_name\",\"status\":\"success\",\"duration\":$duration}")
+    SUCCESS_SERVICES+=("$service_name")
+    [[ "$JSON" == false ]] && echo -e "${GREEN}    Status : SUCCESS${RESET} (${duration}s)"
+  else
+    FAILED=true
+    RESULTS+=("{\"service\":\"$service_name\",\"status\":\"failed\",\"duration\":$duration}")
+    FAILED_SERVICES+=("$service_name")
+    [[ "$JSON" == false ]] && echo -e "${RED}    Status : FAILED${RESET} (${duration}s)"
+  fi
 }
 
-run_service "$ROOT_DIR"
+# ---------- Execution ----------
+if [[ "$PARALLEL" == true ]]; then
+  for d in "$ROOT_DIR"/*/; do [[ -d "$d" ]] && run_service "$d" & done
+  wait
+else
+  run_service "$ROOT_DIR"
+fi
 
 # ---------- Summary ----------
-echo
-echo -e "${BOLD}${CYAN}==================== SUMMARY ====================${RESET}"
+if [[ "$JSON" == false ]]; then
+  echo
+  echo -e "${BOLD}${CYAN}============================================================${RESET}"
+  echo -e "${BOLD}SUMMARY${RESET}"
+  echo -e "${CYAN}------------------------------------------------------------${RESET}"
 
-echo -e "${GREEN}Successful : ${#SUCCESS[@]}${RESET}"
-for s in "${SUCCESS[@]}"; do
-  echo -e "  ${GREEN}- ${s}${RESET}"
-done
+  echo -e "${GREEN}Successful (${#SUCCESS_SERVICES[@]}):${RESET}"
+  for s in "${SUCCESS_SERVICES[@]}"; do
+    echo -e "  ${GREEN}✓${RESET} $s"
+  done
 
-echo
-echo -e "${RED}Failed     : ${#FAILED[@]}${RESET}"
-for f in "${FAILED[@]}"; do
-  echo -e "  ${RED}- ${f}${RESET}"
-done
+  echo
+  echo -e "${RED}Failed (${#FAILED_SERVICES[@]}):${RESET}"
+  for f in "${FAILED_SERVICES[@]}"; do
+    echo -e "  ${RED}✗${RESET} $f"
+  done
 
-echo -e "${CYAN}=================================================${RESET}"
-
-if [[ ${#FAILED[@]} -ne 0 ]]; then
-  exit 1
+  echo -e "${CYAN}============================================================${RESET}"
 fi
+
+# ---------- JSON Output ----------
+if [[ "$JSON" == true ]]; then
+  echo "{"
+  echo "  \"target\": \"${ROOT_DIR}\","
+  echo "  \"command\": \"docker compose ${COMPOSE_ARGS[*]}\","
+  echo "  \"results\": ["
+  printf "    %s,\n" "${RESULTS[@]}" | sed '$ s/,$//'
+  echo "  ]"
+  echo "}"
+fi
+
+$FAILED && exit 1 || exit 0
 
