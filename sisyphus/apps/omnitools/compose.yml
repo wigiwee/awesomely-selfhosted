@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  crafty:
+    container_name: omnitools
+    image: iib0011/omni-tools
+    restart: always
+    ports:
+      - "8011:80" # HTTP
