@@ -1,0 +1,11 @@
+version: "3"
+services:
+  gotify:
+    image: gotify/server
+    ports:
+      - 8023:80
+    environment:
+      - TZ="Asia/Kolkata"
+      - GOTIFY_DEFAULTUSER_PASS=custom
+    volumes:
+      - "/home/docker/data/gotify:/app/data"
