@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-
 set -u
 
-# ---------- Colors ----------
+# ================== COLORS ==================
 RESET="\033[0m"
 BOLD="\033[1m"
 RED="\033[31m"
@@ -15,41 +14,42 @@ if [[ ! -t 1 ]]; then
   RESET="" BOLD="" RED="" GREEN="" YELLOW="" BLUE="" CYAN=""
 fi
 
-# ---------- Args ----------
+# ================== DEPENDENCIES ==================
+command -v docker >/dev/null 2>&1 || { echo "docker not found"; exit 1; }
+command -v bc >/dev/null 2>&1 || { echo "bc not found"; exit 1; }
+command -v find >/dev/null 2>&1 || { echo "find not found"; exit 1; }
+
+# ================== ARGS ==================
 TARGET_DIR="${1:-}"
-RAW_ARGS=("${@:2}")
+shift || true
+RAW_ARGS=("$@")
 
-if [[ -z "$TARGET_DIR" ]]; then
-  echo "Usage: docker-actions <directory> <docker compose args>"
-  exit 1
-fi
+[[ -z "$TARGET_DIR" ]] && { echo "Usage: docker-actions <dir> <docker compose args>"; exit 1; }
 
-if ! ROOT_DIR="$(realpath "$TARGET_DIR" 2>/dev/null)"; then
+ROOT_DIR="$(realpath "$TARGET_DIR" 2>/dev/null)" || {
   echo "Invalid directory: $TARGET_DIR"
   exit 1
-fi
+}
 
-[[ "$ROOT_DIR" == "/" ]] && echo "Refusing to operate on /" && exit 1
+[[ "$ROOT_DIR" == "/" ]] && { echo "Refusing to operate on /"; exit 1; }
 
-# ---------- Flags ----------
+# ================== FLAGS ==================
 DRY_RUN=false
-PARALLEL=false
 JSON=false
 COMPOSE_ARGS=()
 
 for arg in "${RAW_ARGS[@]}"; do
   case "$arg" in
     --dry-run) DRY_RUN=true ;;
-    --parallel) PARALLEL=true ;;
     --json) JSON=true ;;
     *) COMPOSE_ARGS+=("$arg") ;;
   esac
 done
 
-[[ ${#COMPOSE_ARGS[@]} -eq 0 ]] && echo "Missing docker compose arguments" && exit 1
+[[ ${#COMPOSE_ARGS[@]} -eq 0 ]] && { echo "Missing docker compose args"; exit 1; }
 [[ "${COMPOSE_ARGS[0]}" == "status" ]] && COMPOSE_ARGS=("ps")
 
-# ---------- Header ----------
+# ================== HEADER ==================
 if [[ "$JSON" == false ]]; then
   echo -e "${BOLD}${CYAN}Docker Compose Control${RESET}"
   echo -e "${YELLOW}Target dir${RESET}  : ${ROOT_DIR}"
@@ -58,28 +58,30 @@ if [[ "$JSON" == false ]]; then
   echo -e "${CYAN}------------------------------------------------------------${RESET}"
 fi
 
+# ================== STATE ==================
 RESULTS=()
 SUCCESS_SERVICES=()
 FAILED_SERVICES=()
 FAILED=false
 
-# ---------- Core Logic ----------
-run_service() {
-  local dir="$1"
+# ================== DISCOVER SERVICES (CORRECT PRUNE) ==================
+mapfile -t SERVICE_DIRS < <(
+  find "$ROOT_DIR" \
+    -type d -exec test -f '{}/.docker-actions-ignore' \; -prune -o \
+    -type f \( -name "compose.yml" -o -name "docker-compose.yml" \) -print |
+  xargs -n1 dirname |
+  sort -u
+)
 
-  [[ -f "$dir/.docker-actions-ignore" ]] && return
+# ================== EXECUTE ==================
+for dir in "${SERVICE_DIRS[@]}"; do
+  service_name="$(basename "$dir")"
 
-  local compose_file=""
+  compose_file=""
   [[ -f "$dir/compose.yml" ]] && compose_file="$dir/compose.yml"
   [[ -f "$dir/docker-compose.yml" ]] && compose_file="$dir/docker-compose.yml"
+  [[ -z "$compose_file" ]] && continue
 
-  if [[ -z "$compose_file" ]]; then
-    for d in "$dir"/*/; do [[ -d "$d" ]] && run_service "$d"; done
-    return
-  fi
-
-  local service_name start end duration rc
-  service_name="$(basename "$dir")"
   start=$(date +%s.%N)
 
   if [[ "$JSON" == false ]]; then
@@ -92,7 +94,7 @@ run_service() {
   if [[ "$DRY_RUN" == true ]]; then
     RESULTS+=("{\"service\":\"$service_name\",\"status\":\"dry-run\"}")
     SUCCESS_SERVICES+=("$service_name")
-    return
+    continue
   fi
 
   (
@@ -101,7 +103,6 @@ run_service() {
   )
 
   rc=$?
-
   end=$(date +%s.%N)
   duration=$(printf "%.2f" "$(echo "$end - $start" | bc)")
 
@@ -115,17 +116,9 @@ run_service() {
     FAILED_SERVICES+=("$service_name")
     [[ "$JSON" == false ]] && echo -e "${RED}    Status : FAILED${RESET} (${duration}s)"
   fi
-}
+done
 
-# ---------- Execution ----------
-if [[ "$PARALLEL" == true ]]; then
-  for d in "$ROOT_DIR"/*/; do [[ -d "$d" ]] && run_service "$d" & done
-  wait
-else
-  run_service "$ROOT_DIR"
-fi
-
-# ---------- Summary ----------
+# ================== SUMMARY ==================
 if [[ "$JSON" == false ]]; then
   echo
   echo -e "${BOLD}${CYAN}============================================================${RESET}"
@@ -146,7 +139,7 @@ if [[ "$JSON" == false ]]; then
   echo -e "${CYAN}============================================================${RESET}"
 fi
 
-# ---------- JSON Output ----------
+# ================== JSON ==================
 if [[ "$JSON" == true ]]; then
   echo "{"
   echo "  \"target\": \"${ROOT_DIR}\","
@@ -158,4 +151,3 @@ if [[ "$JSON" == true ]]; then
 fi
 
 $FAILED && exit 1 || exit 0
-
