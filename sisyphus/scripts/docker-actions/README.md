@@ -25,3 +25,7 @@ sudo ln -s /home/docker/awesomely-selfhosted/sisyphus/scripts/docker-actions/doc
 docker-actions . up
 ```
 [github](https://github.com/wigiwee/docker-actions/blob/master/docker-actioins.sh) refer this github repo for latest docker-actions.sh file
+
+## or follow the script for installion
+```bash 
+sudo bash /home/docker/awesomely-selfhosted/sisyphus/scripts/docker-actions/setup.sh
