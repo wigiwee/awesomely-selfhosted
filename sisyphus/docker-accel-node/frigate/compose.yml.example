@@ -31,4 +31,6 @@ services:
       - "8555:8555/udp" # WebRTC over udp
     environment:
       FRIGATE_RTSP_PASSWORD: "password"
+      CAM_USER: "admin"
+      CAM_PASS: "pass"
 
