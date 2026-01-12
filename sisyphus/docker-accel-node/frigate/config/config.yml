@@ -1,0 +1,191 @@
+mqtt:
+  host: mqtt
+  topic_prefix: frigate
+
+version: 0.16-0
+
+objects:
+  track:
+    - person
+  filters:
+    person:
+      min_score: 0.8
+
+detectors:
+  cpu1:
+    type: cpu
+
+model:
+  model_type: yolonas
+
+# detect:
+#   enabled: true
+#   fps: 8
+
+cameras:
+  D1:
+    enabled: true
+    ffmpeg:
+      hwaccel_args: preset-nvidia-h264
+      output_args:
+        record: preset-record-generic-audio-aac
+      inputs:
+        - path: 
+            rtsp://user:pass@192.168.1.xxx:554/cam/realmonitor?channel=1&subtype=0
+          input_args: preset-rtsp-restream
+          roles: [record]
+
+  D2:
+    enabled: true
+    ffmpeg:
+      hwaccel_args: preset-nvidia-h264
+      output_args:
+        record: preset-record-generic-audio-aac
+      inputs:
+        - path: 
+            rtsp://user:pass@192.168.1.xxx:554/cam/realmonitor?channel=1&subtype=0
+          input_args: preset-rtsp-restream
+          roles: [record]
+
+  D3:
+    enabled: true
+    ffmpeg:
+      hwaccel_args: preset-nvidia-h264
+      output_args:
+        record: preset-record-generic-audio-aac
+      inputs:
+        - path: 
+            rtsp://user:pass@192.168.1.xxx:554/cam/realmonitor?channel=1&subtype=0
+          input_args: preset-rtsp-restream
+          roles: [record]
+
+  D4:
+    enabled: true
+    ffmpeg:
+      hwaccel_args: preset-nvidia-h264
+      output_args:
+        record: preset-record-generic-audio-aac
+      inputs:
+        - path: 
+            rtsp://user:pass@192.168.1.xxx:554/cam/realmonitor?channel=1&subtype=0
+          input_args: preset-rtsp-restream
+          roles: [record]
+
+  D5:
+    enabled: true
+    ffmpeg:
+      hwaccel_args: preset-nvidia-h264
+      output_args:
+        record: preset-record-generic-audio-aac
+      inputs:
+        - path: 
+            rtsp://user:pass@192.168.1.xxx:554/cam/realmonitor?channel=1&subtype=0
+          input_args: preset-rtsp-restream
+          roles: [record]
+
+  D6:
+    enabled: true
+    ffmpeg:
+      hwaccel_args: preset-nvidia-h264
+      output_args:
+        record: preset-record-generic-audio-aac
+      inputs:
+        - path: 
+            rtsp://user:pass@192.168.1.xxx:554/cam/realmonitor?channel=1&subtype=0
+          input_args: preset-rtsp-restream
+          roles: [record]
+
+        - path: 
+            rtsp://user:pass@192.168.1.xxx:554/cam/realmonitor?channel=1&subtype=1
+          roles: [detect]
+
+    detect:
+      width: 640
+      height: 380
+
+    zones:
+      zone5:
+        coordinates: 
+          0.458,0.156,0.447,0.46,0.428,0.624,0.445,0.994,0.995,0.994,0.971,0.354,0.971,0.248,0.775,0.138,0.55,0.215
+        loitering_time: 0
+        objects: person
+    notifications:
+      enabled: true
+    motion:
+      mask: 
+        0.003,0,0.005,0.999,0.335,0.987,0.321,0.673,0.337,0.503,0.344,0.422,0.354,0.3,0.371,0.219,0.447,0.103,0.549,0.206,0.724,0.114,0.809,0.131,0.861,0.175,0.921,0.186,0.976,0.227,0.98,0.425,0.999,0.452,0.997,0.007
+  D7:
+    enabled: true
+    ffmpeg:
+      hwaccel_args: preset-nvidia-h264
+      output_args:
+        record: preset-record-generic-audio-aac
+      inputs:
+        - path: 
+            rtsp://user:pass@192.168.1.xxx:554/cam/realmonitor?channel=1&subtype=0
+          input_args: preset-rtsp-restream
+          roles: [record]
+
+        - path: 
+        rtsp://user:pass@192.168.1.xxx:554/cam/realmonitor?channel=1&subtype=1
+          roles: [detect]
+
+    detect:
+      width: 640
+      height: 380
+
+    notifications:
+      enabled: true
+    zones:
+      zone4:
+        coordinates: 
+          0,0.398,0.082,0.388,0.11,0.204,0.294,0.002,0.509,0.011,0.58,0.284,0.666,0.31,0.806,0.408,1,0.503,0.998,0.993,0.002,0.996
+        inertia: 3
+        loitering_time: 0
+        objects: person
+    motion:
+      mask:
+
+        - 0.002,0.005,0.002,0.274,0.097,0.28,0.108,0.197,0.286,0.004
+        - 0.516,0.012,0.587,0.276,0.677,0.299,0.83,0.394,0.997,0.482,0.998,0.005
+  D8:
+    enabled: true
+    ffmpeg:
+      hwaccel_args: preset-nvidia-h264
+      output_args:
+        record: preset-record-generic-audio-aac
+      inputs:
+        - path: 
+            rtsp://user:pass@192.168.1.xxx:554/cam/realmonitor?channel=1&subtype=0
+          input_args: preset-rtsp-restream
+          roles: [record]
+
+record:
+  enabled: true
+  retain:
+    days: 15
+    mode: all
+  alerts:
+    retain:
+      days: 30
+      mode: motion
+  detections:
+    retain:
+      days: 30
+      mode: motion
+
+semantic_search:
+  enabled: false
+  model_size: large
+face_recognition:
+  enabled: true
+  model_size: large
+lpr:
+  enabled: false
+classification:
+  bird:
+    enabled: false
+notifications:
+  enabled: true
+  email: user@email.com 
+
