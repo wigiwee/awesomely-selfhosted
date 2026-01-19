@@ -1,0 +1,12 @@
+version: "3"
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    ports:
+     - 9445:80 
+    volumes:
+     - /home/docker/data/bitwarden:/data:rw
+    env_file:
+     - .env
