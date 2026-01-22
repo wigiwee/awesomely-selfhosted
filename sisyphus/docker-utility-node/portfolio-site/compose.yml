@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  vue-portfolio:
+    image: vue-portfolio
+    container_name: vue-portfolio
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
