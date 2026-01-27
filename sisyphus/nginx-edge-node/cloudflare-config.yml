@@ -1,0 +1,29 @@
+tunnel: e4223301-0cff-42a6-aebd-faf4979426bf
+credentials-file: /root/.cloudflared/e4223301-0cff-42a6-aebd-faf4979426bf.json
+
+ingress:
+  - hostname: wigiwee.com
+    service: http://localhost:80
+
+  - hostname: immich.wigiwee.com
+    service: http://localhost:80
+
+  - hostname: uptime.wigiwee.com
+    service: http://localhost:80
+  
+  - hostname: gotify.wigiwee.com
+    service: http://localhost:80
+
+  - hostname: nvr.wigiwee.com
+    service: http://localhost:80
+
+  - hostname: cloud.wigiwee.com
+    service: http://localhost:80
+
+  - hostname: jellyfin.wigiwee.com
+    service: http://localhost:80
+  
+  - hostname: bitwarden.wigiwee.com
+    service: http://localhost:80
+
+  - service: http_status:404
