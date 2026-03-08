@@ -6,7 +6,7 @@
 ```bash
 mkdir authorized_keys
 cd authorized_keys
-ssh-keygen -t ed25519
+ssh-keygen -t **ed25519**
 ```
 
 ### step - 2
@@ -34,7 +34,16 @@ borg init --encryption=repokey repository1
 ## step - 5 setup a remote client to do backups to the server
 **note:** i use vorta as a borg gui client for borg then add source to the vorta from client machine and manage excluded items and take backup
 
+## possible issues you might face
 **Connection closed by remote host. Is borg working on the server?** :
+```
+sudo chmod 700 ~/.ssh && sudo chmod 600 ~/.ssh/config
+```
+```
+ssh-keygen -R "[server-ip]:server-port" # ssh-keygen -R "[100.82.20.2]:22"
+```
+then type yes so the key will be added to `~/.ssh/config`
+
 if you see this error make sure that the correct ssh private key is selected for the profile and make sure that ~/.ssh has 700 permission and ~/.ssh/config has 600 
 
 check vorta logs : Settings/About -> About -> logs
