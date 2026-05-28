@@ -1,21 +1,35 @@
 # Self-Hosted Documentation
 
-This repository contains detailed documentation of my self-hosting setup, including installation steps, configurations, and troubleshooting notes for various services.
+This repository documents my self-hosted homelab: server notes, Docker Compose stacks, helper scripts, and troubleshooting references.
 
-## About
-This documentation serves as a central knowledge base for managing my self-hosted environment. It includes tested configurations, lessons learned, scripts, and best practices for running applications and infrastructure on my own hardware.
+## Overview
 
-## Proxmox Nodes
-This section documents each Proxmox node in the cluster, including hardware specifications, role, and hosted workloads.
+The setup is centered around a Proxmox host named `sisyphus`, with Docker workloads split across utility, compute, and GPU-accelerated nodes.
 
-| Node Name |  GPU  | Node Name CPU            | RAM  | Storage           | Role                  | Notes |
-|-----------|-----------|---------------|------|-------------------|-----------------------|-------|
-| sisyphus | Nvidia Geforce RTX 3060  | AMD 5700x | 32GB DDR4 | 2TB nvme | Main compute + storage | Runs core services |
+| Node | GPU | CPU | RAM | Storage | Role |
+| --- | --- | --- | --- | --- | --- |
+| `sisyphus` | NVIDIA GeForce RTX 3060 | AMD Ryzen 7 5700X | 32 GB DDR4 | 2 TB NVMe, 6 TB HDD | Main compute and storage host |
 
-## Stack Overview
-- **Server OS:** Proxmox VE
-- **Networking:** Tailscale, Pi-hole, Reverse Proxy (Nginx/Traefik)
-- **Storage:** ZFS / RAID with backups (my poor ass can't affor hdd's yet)
+## Stack
+
+- **Virtualization:** Proxmox VE
+- **Container runtime:** Docker inside Ubuntu Server VMs
+- **Networking:** Tailscale, Cloudflare Tunnel, nginx reverse proxy
+- **Storage:** ext4/LVM with dedicated Docker data paths
+- **Backups:** BorgBackup and service-level data exports
+
+## Layout
+
+```text
+sisyphus/
+  docker-accel-node/      GPU-heavy Docker services
+  docker-compute-node/    CPU-heavy Docker services
+  docker-utility-node/    Lightweight always-on services
+  nginx-edge-node/        Cloudflare Tunnel and nginx edge proxy notes
+  scripts/                Helper scripts for Docker and storage tasks
+  trash/                  Archived or retired services
+```
 
 ## License
+
 This documentation is released under the [MIT License](LICENSE).
