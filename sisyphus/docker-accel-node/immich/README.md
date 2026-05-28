@@ -1,60 +1,91 @@
-## Immich - a free, open-source, self-hosted photo and video management platform 
+## Immich
 
-follow this tutorial for setting up Immich on docker compse - [tutorial](https://immich.app/docs/install/docker-compose)
+Immich is a self-hosted photo and video backup platform. This stack uses the upstream Immich Docker Compose layout with NVIDIA GPU support for the server and machine-learning containers.
 
-**note :** pull latest docker-compose.yml and .env file from the upstream github
+| Service | URL | Purpose |
+| --- | --- | --- |
+| Immich | `http://<server-ip>:2283` | Photo and video library |
 
-**note :** i tried setting up a seperate partition for all the data of the container but automatically mounting that partition via fstab caused the vm to crash, so i manually added a script to be executed at runtime, follow the steps to enable the script
+## Prerequisites
 
-### step - 1
+- Docker and Docker Compose plugin installed.
+- NVIDIA driver and NVIDIA Container Toolkit installed for GPU acceleration.
+- Current Immich `docker-compose.yml` and `.env` files from the official release.
+
+Reference: [Immich Docker Compose installation](https://immich.app/docs/install/docker-compose)
+
+## Compose Files
+
+This directory keeps `compose.yml.example` as a local reference. For production, pull the current release files from Immich:
+
 ```bash
-sudo touch /etc/rc.local
-
+curl -o compose.yml https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml
+curl -o .env https://github.com/immich-app/immich/releases/latest/download/example.env
 ```
 
-### step - 2 
-```bash
-sudo chmod 755 /etc/rc.local 
+Then apply the local GPU and path changes you need.
+
+## Storage
+
+Set these paths in `.env`:
+
+```env
+UPLOAD_LOCATION=/home/docker/data/immich/upload
+DB_DATA_LOCATION=/home/docker/data/immich/postgres
 ```
 
-### step - 3 rc.local file content
+Create the directories:
+
 ```bash
-
-#!/bin/sh -e
-# This script is executed at the end of each multiuser runlevel 
-
-/path/to/my/script-for-mounting-parition.sh  
-
-exit 0
-
-```
-### step - 4 script-for-mounting-parition.sh
-```bash
-
-#!/bin/sh -e
-
-mount /dev/sda /home/docker/data
+sudo mkdir -p /home/docker/data/immich/upload
+sudo mkdir -p /home/docker/data/immich/postgres
 ```
 
-### step - 5 
-change the path to the UPLOAD_LOCATION in the .env file according to the mounting point
+If media is stored on a separate mounted partition, make sure the partition is mounted before starting Immich.
 
-### step - 6 
+## Start
+
 ```bash
-docker compose up
+docker compose up -d
 ```
-## Updating server 
+
+Check logs:
+
+```bash
+docker compose logs -f immich-server
+```
+
+## Update Server
+
+Use the included helper script:
+
+```bash
+./update-server.sh
+```
+
+Or run the commands manually:
+
 ```bash
 docker compose pull
 docker compose down
-docker compose up
-```
-removing old version docker images
-```bash
+docker compose up -d
 docker image prune -a
 ```
 
-### Updating client
-to update mobile client update the immich app via play store
+## Update Client
 
-![01](/assets/immich/01.png)
+Update the Immich mobile app through the app store on each device.
+
+## Backup
+
+Back up the upload library, database data directory, and `.env` file. Stop the stack before taking a full filesystem backup:
+
+```bash
+docker compose down
+sudo tar -czf immich-backup.tar.gz /home/docker/data/immich .env
+docker compose up -d
+```
+
+## Screenshot
+
+![Immich library](/assets/immich/01.png)
