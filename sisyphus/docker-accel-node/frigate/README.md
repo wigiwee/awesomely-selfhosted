@@ -60,6 +60,122 @@ cameras:
 
 Do not leave default passwords or placeholder camera IPs in production.
 
+## Object Detection with YOLOv9
+
+This setup uses a YOLOv9 medium model exported to ONNX at `320x320`. The
+TensorRT Frigate image automatically uses a supported NVIDIA GPU for the ONNX
+detector.
+
+The host needs NVIDIA driver version `545` or newer, a GPU with compute
+capability `5.0` or newer, and the NVIDIA Container Toolkit. Confirm GPU
+passthrough before configuring the model:
+
+```bash
+docker compose exec frigate nvidia-smi
+```
+
+Build a Frigate-compatible model:
+
+```bash
+docker build . --build-arg MODEL_SIZE=m --build-arg IMG_SIZE=320 --output . -f- <<'EOF'
+FROM python:3.11 AS build
+RUN apt-get update && apt-get install --no-install-recommends -y cmake libgl1 && rm -rf /var/lib/apt/lists/*
+COPY --from=ghcr.io/astral-sh/uv:0.10.4 /uv /bin/
+WORKDIR /yolov9
+ADD https://github.com/WongKinYiu/yolov9.git .
+RUN uv pip install --system -r requirements.txt
+RUN uv pip install --system onnx==1.18.0 onnxruntime onnx-simplifier==0.4.* onnxscript
+ARG MODEL_SIZE
+ARG IMG_SIZE
+ADD https://github.com/WongKinYiu/yolov9/releases/download/v0.1/yolov9-${MODEL_SIZE}-converted.pt yolov9-${MODEL_SIZE}.pt
+RUN sed -i "s/ckpt = torch.load(attempt_download(w), map_location='cpu')/ckpt = torch.load(attempt_download(w), map_location='cpu', weights_only=False)/g" models/experimental.py
+RUN python3 export.py --weights ./yolov9-${MODEL_SIZE}.pt --imgsz ${IMG_SIZE} --simplify --include onnx
+FROM scratch
+ARG MODEL_SIZE
+ARG IMG_SIZE
+COPY --from=build /yolov9/yolov9-${MODEL_SIZE}.onnx /yolov9-${MODEL_SIZE}-${IMG_SIZE}.onnx
+EOF
+```
+
+Copy the generated model into Frigate's mapped config directory:
+
+```bash
+sudo mkdir -p /home/docker/data/frigate/config/model_cache
+sudo cp yolov9-m-320.onnx /home/docker/data/frigate/config/model_cache/
+```
+
+Configure the ONNX detector and make sure the model dimensions match the
+dimensions used during export:
+
+```yaml
+objects:
+  track:
+    - person
+    - cat
+    - car
+    - bike
+
+detectors:
+  onnx:
+    type: onnx
+
+model:
+  model_type: yolo-generic
+  width: 320
+  height: 320
+  input_tensor: nchw
+  input_dtype: float
+  path: /config/model_cache/yolov9-m-320.onnx
+  labelmap_path: /labelmap/coco-80.txt
+
+detect:
+  enabled: true
+  fps: 5
+```
+
+Each camera that uses object detection also needs a stream with the `detect`
+role and detection enabled:
+
+```yaml
+cameras:
+  D1:
+    ffmpeg:
+      inputs:
+        - path: rtsp://user:pass@192.168.1.xxx:554/cam/realmonitor?channel=1&subtype=1
+          roles: [detect]
+    detect:
+      enabled: true
+      width: 640
+      height: 380
+```
+
+After restarting Frigate, check that the model loads without errors and review
+the detector inference speed in the Frigate system metrics:
+
+```bash
+docker compose restart frigate
+docker compose logs -f frigate
+```
+
+### Observed Performance
+
+The following metrics were observed with the YOLOv9 medium model on an RTX
+3060:
+
+| Model resolution | GPU load | Inference time |
+| --- | ---: | ---: |
+| `640x640` | ~90% | ~17 ms |
+| `320x320` | ~30% | ~6 ms |
+
+Reducing the model resolution from `640x640` to `320x320` lowered the observed
+GPU load by about 60 percentage points and inference time by about 65%. These
+results are specific to the documented setup; camera count, detection FPS,
+drivers, and other GPU workloads can affect performance. See the
+[Frigate discussion](https://github.com/blakeblackshear/frigate/discussions/23454),
+[object detector configuration](https://docs.frigate.video/configuration/object_detectors/),
+and [NVIDIA GPU requirements](https://docs.frigate.video/frigate/hardware/#nvidia-gpus)
+for details.
+
 ## Start
 
 ```bash
